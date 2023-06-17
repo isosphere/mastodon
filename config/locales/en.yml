@@ -301,7 +301,7 @@ en:
       new:
         create: Create announcement
         title: New announcement
-      publish: Publish
+      publish: Toot
       published_msg: Announcement successfully published!
       scheduled_for: Scheduled for %{time}
       scheduled_msg: Announcement scheduled for publication!
