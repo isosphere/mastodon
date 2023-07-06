@@ -13,6 +13,7 @@ import { expandPublicTimeline } from 'flavours/glitch/actions/timelines';
 import Column from 'flavours/glitch/components/column';
 import ColumnHeader from 'flavours/glitch/components/column_header';
 import DismissableBanner from 'flavours/glitch/components/dismissable_banner';
+import { domain } from 'flavours/glitch/initial_state';
 import StatusListContainer from 'flavours/glitch/features/ui/containers/status_list_container';
 
 import ColumnSettingsContainer from './containers/column_settings_container';
@@ -146,11 +147,8 @@ class PublicTimeline extends PureComponent {
           <ColumnSettingsContainer columnId={columnId} />
         </ColumnHeader>
 
-        <DismissableBanner id='public_timeline'>
-          <FormattedMessage id='dismissable_banner.public_timeline' defaultMessage='These are the most recent public posts from people on this and other servers of the decentralized network that this server knows about.' />
-        </DismissableBanner>
-
         <StatusListContainer
+          prepend={<DismissableBanner id='public_timeline'><FormattedMessage id='dismissable_banner.public_timeline' defaultMessage='These are the most recent public posts from people on the social web that people on {domain} follow.' values={{ domain }} /></DismissableBanner>}
           timelineId={`public${onlyRemote ? ':remote' : (allowLocalOnly ? ':allow_local_only' : '')}${onlyMedia ? ':media' : ''}`}
           onLoadMore={this.handleLoadMore}
           trackScroll={!pinned}

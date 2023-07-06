@@ -314,7 +314,7 @@ class Header extends ImmutablePureComponent {
     let badge;
 
     if (account.get('bot')) {
-      badge = (<div className='account-role bot'><FormattedMessage id='account.badges.bot' defaultMessage='Bot' /></div>);
+      badge = (<div className='account-role bot'><FormattedMessage id='account.badges.bot' defaultMessage='Automated' /></div>);
     } else if (account.get('group')) {
       badge = (<div className='account-role group'><FormattedMessage id='account.badges.group' defaultMessage='Group' /></div>);
     } else {
@@ -398,6 +398,7 @@ class Header extends ImmutablePureComponent {
         <Helmet>
           <title>{titleFromAccount(account)}</title>
           <meta name='robots' content={(isLocal && isIndexable) ? 'all' : 'noindex'} />
+          <link rel='canonical' href={account.get('url')} />
         </Helmet>
       </div>
     );
