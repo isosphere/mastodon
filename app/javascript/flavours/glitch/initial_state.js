@@ -70,22 +70,31 @@
  * @property {boolean} reduce_motion
  * @property {string} repository
  * @property {boolean} search_enabled
+ * @property {boolean} trends_enabled
  * @property {boolean} single_user_mode
  * @property {string} source_url
  * @property {string} streaming_api_base_url
  * @property {boolean} timeline_preview
  * @property {string} title
- * @property {boolean} trends
+ * @property {boolean} show_trends
  * @property {boolean} trends_as_landing_page
  * @property {boolean} unfollow_modal
  * @property {boolean} use_blurhash
  * @property {boolean=} use_pending_items
  * @property {string} version
+ * @property {string} sso_redirect
  * @property {boolean} translation_enabled
  * @property {string} status_page_url
  * @property {boolean} system_emoji_font
  * @property {string} default_content_type
  */
+
+/** @type {string} */
+const initialPath = document.querySelector("head meta[name=initialPath]")?.getAttribute("content") ?? '';
+/** @type {boolean} */
+export const hasMultiColumnPath = initialPath === '/'
+  || initialPath === '/getting-started'
+  || initialPath.startsWith('/deck');
 
 /**
  * @typedef InitialState
@@ -139,7 +148,8 @@ export const reduceMotion = getMeta('reduce_motion');
 export const registrationsOpen = getMeta('registrations_open');
 export const repository = getMeta('repository');
 export const searchEnabled = getMeta('search_enabled');
-export const showTrends = getMeta('trends');
+export const trendsEnabled = getMeta('trends_enabled');
+export const showTrends = getMeta('show_trends');
 export const singleUserMode = getMeta('single_user_mode');
 export const source_url = getMeta('source_url');
 export const timelinePreview = getMeta('timeline_preview');
@@ -151,6 +161,7 @@ export const usePendingItems = getMeta('use_pending_items');
 export const version = getMeta('version');
 export const languages = initialState?.languages;
 export const statusPageUrl = getMeta('status_page_url');
+export const sso_redirect = getMeta('sso_redirect');
 
 // Glitch-soc-specific settings
 export const maxChars = (initialState && initialState.max_toot_chars) || 500;
