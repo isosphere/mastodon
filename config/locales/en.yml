@@ -1405,9 +1405,9 @@ en:
       sign_up:
         subject: "%{name} signed up"
     favourite:
-      body: 'Your post was favorited by %{name}:'
-      subject: "%{name} favorited your post"
-      title: New favorite
+      body: '%{name} booped your toot!'
+      subject: "%{name} booped your toot!"
+      title: Got booped
     follow:
       body: "%{name} is now following you!"
       subject: "%{name} is now following you"
