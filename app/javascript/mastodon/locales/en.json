@@ -113,10 +113,6 @@
   "column.direct": "Private mentions",
   "column.directory": "Browse profiles",
   "column.domain_blocks": "Blocked domains",
-<<<<<<< HEAD
-  "column.favourites": "Booped Toots",
-=======
->>>>>>> new-merge
   "column.firehose": "Live feeds",
   "column.favourites": "Booped Toots",
   "column.follow_requests": "Follow requests",

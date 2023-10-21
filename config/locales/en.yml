@@ -302,12 +302,12 @@ en:
         create: Create announcement
         title: New announcement
       publish: Toot
-      published_msg: Announcement successfully published!
+      published_msg: Announcement successfully tooted!
       scheduled_for: Scheduled for %{time}
       scheduled_msg: Announcement scheduled for publication!
       title: Announcements
-      unpublish: Unpublish
-      unpublished_msg: Announcement successfully unpublished!
+      unpublish: Untoot
+      unpublished_msg: Announcement successfully untooted!
       updated_msg: Announcement successfully updated!
     critical_update_pending: Critical update pending
     custom_emojis:
@@ -404,7 +404,7 @@ en:
         create: Create block
         hint: The domain block will not prevent creation of account entries in the database, but will retroactively and automatically apply specific moderation methods on those accounts.
         severity:
-          desc_html: "<strong>Limit</strong> will make posts from accounts at this domain invisible to anyone who isn't following them. <strong>Suspend</strong> will remove all content, media, and profile data for this domain's accounts from your server. Use <strong>None</strong> if you just want to reject media files."
+          desc_html: "<strong>Limit</strong> will make toots from accounts at this domain invisible to anyone who isn't following them. <strong>Suspend</strong> will remove all content, media, and profile data for this domain's accounts from your server. Use <strong>None</strong> if you just want to reject media files."
           noop: None
           silence: Limit
           suspend: Suspend
@@ -503,7 +503,7 @@ en:
         instance_languages_dimension: Top languages
         instance_media_attachments_measure: stored media attachments
         instance_reports_measure: reports about them
-        instance_statuses_measure: stored posts
+        instance_statuses_measure: stored toots
       delivery:
         all: All
         clear: Clear delivery errors
@@ -562,11 +562,11 @@ en:
     relays:
       add_new: Add new relay
       delete: Delete
-      description_html: A <strong>federation relay</strong> is an intermediary server that exchanges large volumes of public posts between servers that subscribe and publish to it. <strong>It can help small and medium servers discover content from the fediverse</strong>, which would otherwise require local users manually following other people on remote servers.
+      description_html: A <strong>federation relay</strong> is an intermediary server that exchanges large volumes of public toots between servers that subscribe and publish to it. <strong>It can help small and medium servers discover content from the fediverse</strong>, which would otherwise require local users manually following other people on remote servers.
       disable: Disable
       disabled: Disabled
       enable: Enable
-      enable_hint: Once enabled, your server will subscribe to all public posts from this relay, and will begin sending this server's public posts to it.
+      enable_hint: Once enabled, your server will subscribe to all public toots from this relay, and will begin sending this server's public toots to it.
       enabled: Enabled
       inbox_url: Relay URL
       pending: Waiting for relay's approval
@@ -586,8 +586,8 @@ en:
       action_log: Audit log
       action_taken_by: Action taken by
       actions:
-        delete_description_html: The reported posts will be deleted and a strike will be recorded to help you escalate on future infractions by the same account.
-        mark_as_sensitive_description_html: The media in the reported posts will be marked as sensitive and a strike will be recorded to help you escalate on future infractions by the same account.
+        delete_description_html: The reported toots will be deleted and a strike will be recorded to help you escalate on future infractions by the same account.
+        mark_as_sensitive_description_html: The media in the reported toots will be marked as sensitive and a strike will be recorded to help you escalate on future infractions by the same account.
         other_description_html: See more options for controlling the account's behaviour and customize communication to the reported account.
         resolve_description_html: No action will be taken against the reported account, no strike recorded, and the report will be closed.
         silence_description_html: The account will be visible only to those who already follow it or manually look it up, severely limiting its reach. Can always be reverted. Closes all reports against this account.
@@ -608,7 +608,7 @@ en:
       confirm: Confirm
       confirm_action: Confirm moderation action against @%{acct}
       created_at: Reported
-      delete_and_resolve: Delete posts
+      delete_and_resolve: Delete toots
       forwarded: Forwarded
       forwarded_to: Forwarded to %{domain}
       mark_as_resolved: Mark as resolved
@@ -638,8 +638,8 @@ en:
       statuses_description_html: Offending content will be cited in communication with the reported account
       summary:
         action_preambles:
-          delete_html: 'You are about to <strong>remove</strong> some of <strong>@%{acct}</strong>''s posts. This will:'
-          mark_as_sensitive_html: 'You are about to <strong>mark</strong> some of <strong>@%{acct}</strong>''s posts as <strong>sensitive</strong>. This will:'
+          delete_html: 'You are about to <strong>remove</strong> some of <strong>@%{acct}</strong>''s toots. This will:'
+          mark_as_sensitive_html: 'You are about to <strong>mark</strong> some of <strong>@%{acct}</strong>''s toots as <strong>sensitive</strong>. This will:'
           silence_html: 'You are about to <strong>limit</strong> <strong>@%{acct}</strong>''s account. This will:'
           suspend_html: 'You are about to <strong>suspend</strong> <strong>@%{acct}</strong>''s account. This will:'
         actions:
