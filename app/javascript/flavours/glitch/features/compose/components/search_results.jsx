@@ -13,7 +13,6 @@ import { Icon }  from 'flavours/glitch/components/icon';
 import { LoadMore } from 'flavours/glitch/components/load_more';
 import { SearchSection } from 'flavours/glitch/features/explore/components/search_section';
 
-
 import { ImmutableHashtag as Hashtag } from '../../../components/hashtag';
 import AccountContainer from '../../../containers/account_container';
 import StatusContainer from '../../../containers/status_container';
@@ -76,11 +75,11 @@ class SearchResults extends ImmutablePureComponent {
 
 
     return (
-      <div className='drawer--results'>
-        <header className='search-results__header'>
+      <div className='search-results'>
+        <div className='search-results__header'>
           <Icon id='search' icon={SearchIcon} />
           <FormattedMessage id='explore.search_results' defaultMessage='Search results' />
-        </header>
+        </div>
 
         {accounts}
         {hashtags}
