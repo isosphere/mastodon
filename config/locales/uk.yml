@@ -291,6 +291,7 @@ uk:
         update_custom_emoji_html: "%{name} оновлює емодзі %{target}"
         update_domain_block_html: "%{name} оновлює блокування домену для %{target}"
         update_ip_block_html: "%{name} змінює правило для IP %{target}"
+        update_report_html: "%{name} оновлений звіт %{target}"
         update_status_html: "%{name} оновлює допис %{target}"
         update_user_role_html: "%{name} змінює роль %{target}"
       deleted_account: видалений обліковий запис
@@ -298,6 +299,7 @@ uk:
       filter_by_action: Фільтрувати за дією
       filter_by_user: Фільтрувати за користувачем
       title: Журнал подій
+      unavailable_instance: "(ім'я домену недоступне)"
     announcements:
       destroyed_msg: Оголошення успішно видалено!
       edit:
@@ -984,6 +986,7 @@ uk:
       delete: Видалити
       edit_preset: Редагувати шаблон попередження
       empty: Ви ще не визначили жодних попереджень.
+      title: Попереджувальні пресети
     webhooks:
       add_new: Додати кінцеву точку
       delete: Видалити
