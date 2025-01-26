@@ -15,6 +15,11 @@ ru:
       user/invite_request:
         text: Причина
     errors:
+      attributes:
+        domain:
+          invalid: не является действующим доменным именем
+      messages:
+        invalid_domain_on_line: "%{value} Не является действительным доменным именем"
       models:
         account:
           attributes:
@@ -33,6 +38,11 @@ ru:
           attributes:
             data:
               malformed: неверный формат
+        list_account:
+          attributes:
+            account_id:
+              taken: уже в списке
+          must_be_following: должен быть пользователем, на которого вы подписаны
         status:
           attributes:
             reblog:
