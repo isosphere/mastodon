@@ -135,10 +135,7 @@ en-GB:
         text: Can be structured with Markdown syntax.
       terms_of_service_generator:
         admin_email: Legal notices include counternotices, court orders, takedown requests, and law enforcement requests.
-        arbitration_address: Can be the same as Physical address above, or “N/A” if using email
-        arbitration_website: Can be a web form, or “N/A” if using email
         dmca_address: For US operators, use the address registered in the DMCA Designated Agent Directory. A P.O. Box listing is available upon direct request, use the DMCA Designated Agent Post Office Box Waiver Request to email the Copyright Office and describe that you are a home-based content moderator who fears revenge or retribution for your actions and need to use a P.O. Box to remove your home address from public view.
-        dmca_email: Can be the same email used for “Email address for legal notices” above
         domain: Unique identification of the online service you are providing.
         jurisdiction: List the country where whoever pays the bills lives. If it’s a company or other entity, list the country where it’s incorporated, and the city, region, territory or state as appropriate.
       user:
@@ -233,6 +230,7 @@ en-GB:
         setting_display_media_show_all: Show all
         setting_expand_spoilers: Always expand posts marked with content warnings
         setting_hide_network: Hide your social graph
+        setting_missing_alt_text_modal: Show confirmation dialogue before posting media without alt text
         setting_reduce_motion: Reduce motion in animations
         setting_system_font_ui: Use system's default font
         setting_system_scrollbars_ui: Use system's default scrollbar
