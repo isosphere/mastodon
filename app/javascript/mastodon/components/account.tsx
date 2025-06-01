@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { defineMessages, useIntl, FormattedMessage } from 'react-intl';
 
@@ -11,19 +11,25 @@ import {
   unblockAccount,
   muteAccount,
   unmuteAccount,
+  followAccountSuccess,
 } from 'mastodon/actions/accounts';
+import { showAlertForError } from 'mastodon/actions/alerts';
+import { openModal } from 'mastodon/actions/modal';
 import { initMuteModal } from 'mastodon/actions/mutes';
+import { apiFollowAccount } from 'mastodon/api/accounts';
 import { Avatar } from 'mastodon/components/avatar';
 import { Button } from 'mastodon/components/button';
 import { FollowersCounter } from 'mastodon/components/counters';
 import { DisplayName } from 'mastodon/components/display_name';
+import { Dropdown } from 'mastodon/components/dropdown_menu';
 import { FollowButton } from 'mastodon/components/follow_button';
 import { RelativeTimestamp } from 'mastodon/components/relative_timestamp';
 import { ShortNumber } from 'mastodon/components/short_number';
 import { Skeleton } from 'mastodon/components/skeleton';
 import { VerifiedBadge } from 'mastodon/components/verified_badge';
-import DropdownMenu from 'mastodon/containers/dropdown_menu_container';
+import { useIdentity } from 'mastodon/identity_context';
 import { me } from 'mastodon/initial_state';
+import type { MenuItem } from 'mastodon/models/dropdown_menu';
 import { useAppSelector, useAppDispatch } from 'mastodon/store';
 
 const messages = defineMessages({
@@ -46,6 +52,14 @@ const messages = defineMessages({
   mute: { id: 'account.mute_short', defaultMessage: 'Mute' },
   block: { id: 'account.block_short', defaultMessage: 'Block' },
   more: { id: 'status.more', defaultMessage: 'More' },
+  addToLists: {
+    id: 'account.add_or_remove_from_list',
+    defaultMessage: 'Add or Remove from lists',
+  },
+  openOriginalPage: {
+    id: 'account.open_original_page',
+    defaultMessage: 'Open original page',
+  },
 });
 
 export const Account: React.FC<{
@@ -57,9 +71,12 @@ export const Account: React.FC<{
   withBio?: boolean;
 }> = ({ id, size = 46, hidden, minimal, defaultAction, withBio }) => {
   const intl = useIntl();
+  const { signedIn } = useIdentity();
   const account = useAppSelector((state) => state.accounts.get(id));
   const relationship = useAppSelector((state) => state.relationships.get(id));
   const dispatch = useAppDispatch();
+  const accountUrl = account?.url;
+  const isRemote = account?.acct !== account?.username;
 
   const handleBlock = useCallback(() => {
     if (relationship?.blocking) {
@@ -77,13 +94,99 @@ export const Account: React.FC<{
     }
   }, [dispatch, id, account, relationship]);
 
-  const handleMuteNotifications = useCallback(() => {
-    dispatch(muteAccount(id, true));
-  }, [dispatch, id]);
+  const menu = useMemo(() => {
+    let arr: MenuItem[] = [];
 
-  const handleUnmuteNotifications = useCallback(() => {
-    dispatch(muteAccount(id, false));
-  }, [dispatch, id]);
+    if (defaultAction === 'mute') {
+      const handleMuteNotifications = () => {
+        dispatch(muteAccount(id, true));
+      };
+
+      const handleUnmuteNotifications = () => {
+        dispatch(muteAccount(id, false));
+      };
+
+      arr = [
+        {
+          text: intl.formatMessage(
+            relationship?.muting_notifications
+              ? messages.unmute_notifications
+              : messages.mute_notifications,
+          ),
+          action: relationship?.muting_notifications
+            ? handleUnmuteNotifications
+            : handleMuteNotifications,
+        },
+      ];
+    } else if (defaultAction !== 'block') {
+      arr = [];
+
+      if (isRemote && accountUrl) {
+        arr.push({
+          text: intl.formatMessage(messages.openOriginalPage),
+          href: accountUrl,
+        });
+      }
+
+      if (signedIn) {
+        const handleAddToLists = () => {
+          const openAddToListModal = () => {
+            dispatch(
+              openModal({
+                modalType: 'LIST_ADDER',
+                modalProps: {
+                  accountId: id,
+                },
+              }),
+            );
+          };
+          if (relationship?.following || relationship?.requested || id === me) {
+            openAddToListModal();
+          } else {
+            dispatch(
+              openModal({
+                modalType: 'CONFIRM_FOLLOW_TO_LIST',
+                modalProps: {
+                  accountId: id,
+                  onConfirm: () => {
+                    apiFollowAccount(id)
+                      .then((relationship) => {
+                        dispatch(
+                          followAccountSuccess({
+                            relationship,
+                            alreadyFollowing: false,
+                          }),
+                        );
+                        openAddToListModal();
+                      })
+                      .catch((err: unknown) => {
+                        dispatch(showAlertForError(err));
+                      });
+                  },
+                },
+              }),
+            );
+          }
+        };
+
+        arr.push({
+          text: intl.formatMessage(messages.addToLists),
+          action: handleAddToLists,
+        });
+      }
+    }
+
+    return arr;
+  }, [
+    dispatch,
+    intl,
+    id,
+    accountUrl,
+    relationship,
+    defaultAction,
+    isRemote,
+    signedIn,
+  ]);
 
   if (hidden) {
     return (
@@ -94,69 +197,42 @@ export const Account: React.FC<{
     );
   }
 
-  let buttons;
+  let button: React.ReactNode, dropdown: React.ReactNode;
 
-  if (account && account.id !== me && relationship) {
-    const { requested, blocking, muting } = relationship;
-
-    if (requested) {
-      buttons = <FollowButton accountId={id} />;
-    } else if (blocking) {
-      buttons = (
-        <Button
-          text={intl.formatMessage(messages.unblock)}
-          onClick={handleBlock}
-        />
-      );
-    } else if (muting) {
-      const menu = [
-        {
-          text: intl.formatMessage(
-            relationship.muting_notifications
-              ? messages.unmute_notifications
-              : messages.mute_notifications,
-          ),
-          action: relationship.muting_notifications
-            ? handleUnmuteNotifications
-            : handleMuteNotifications,
-        },
-      ];
-
-      buttons = (
-        <>
-          <DropdownMenu
-            items={menu}
-            icon='ellipsis-h'
-            iconComponent={MoreHorizIcon}
-            direction='right'
-            title={intl.formatMessage(messages.more)}
-          />
-
-          <Button
-            text={intl.formatMessage(messages.unmute)}
-            onClick={handleMute}
-          />
-        </>
-      );
-    } else if (defaultAction === 'mute') {
-      buttons = (
-        <Button text={intl.formatMessage(messages.mute)} onClick={handleMute} />
-      );
-    } else if (defaultAction === 'block') {
-      buttons = (
-        <Button
-          text={intl.formatMessage(messages.block)}
-          onClick={handleBlock}
-        />
-      );
-    } else {
-      buttons = <FollowButton accountId={id} />;
-    }
-  } else {
-    buttons = <FollowButton accountId={id} />;
+  if (menu.length > 0) {
+    dropdown = (
+      <Dropdown
+        items={menu}
+        icon='ellipsis-h'
+        iconComponent={MoreHorizIcon}
+        title={intl.formatMessage(messages.more)}
+      />
+    );
   }
 
-  let muteTimeRemaining;
+  if (defaultAction === 'block') {
+    button = (
+      <Button
+        text={intl.formatMessage(
+          relationship?.blocking ? messages.unblock : messages.block,
+        )}
+        onClick={handleBlock}
+      />
+    );
+  } else if (defaultAction === 'mute') {
+    button = (
+      <Button
+        text={intl.formatMessage(
+          relationship?.muting ? messages.unmute : messages.mute,
+        )}
+        onClick={handleMute}
+      />
+    );
+  } else {
+    button = <FollowButton accountId={id} />;
+  }
+
+  let muteTimeRemaining: React.ReactNode;
 
   if (account?.mute_expires_at) {
     muteTimeRemaining = (
@@ -166,7 +242,7 @@ export const Account: React.FC<{
     );
   }
 
-  let verification;
+  let verification: React.ReactNode;
 
   const firstVerifiedField = account?.fields.find((item) => !!item.verified_at);
 
@@ -212,7 +288,12 @@ export const Account: React.FC<{
           </div>
         </Link>
 
-        {!minimal && <div className='account__relationship'>{buttons}</div>}
+        {!minimal && (
+          <div className='account__relationship'>
+            {dropdown}
+            {button}
+          </div>
+        )}
       </div>
 
       {account &&
