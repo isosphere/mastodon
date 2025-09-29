@@ -573,6 +573,13 @@ sq:
         all: Krejt
         limited: Të kufizuarat
         title: Moderim
+      moderation_notes:
+        create: Shtoni Shënim Moderimi
+        created_msg: Shënimi për moderim instance u krijua me sukses!
+        description_html: Shihni dhe lini shënime për moderatorë të tjerë dhe për veten tuaj si referencë në të ardhme
+        destroyed_msg: Shënimi për moderim instance u fshi me sukses!
+        placeholder: Informacion rreth kësaj instance, veprimeve të ndërmarra, apo çfarëdo tjetër që do t’ju ndihmojë të moderoni këtë instancë në të ardhmen.
+        title: Shënime Moderimi
       private_comment: Koment privat
       public_comment: Koment publik
       purge: Spastroje
@@ -1857,19 +1864,9 @@ sq:
       limit: Keni fiksuar tashmë numrin maksimum të mesazheve
       ownership: S’mund të fiksohen mesazhet e të tjerëve
       reblog: S’mund të fiksohet një përforcim
-    quote_policies:
-      followers: Ndjekës dhe përdorues të përmendur
-      nobody: Vetëm përdorues të përmendur
-      public: Këdo
     title: '%{name}: "%{quote}"'
     visibilities:
-      direct: I drejtpërdrejtë
-      private: Vetëm ndjekësve
-      private_long: Shfaqua vetëm ndjekësve
       public: Publike
-      public_long: Mund ta shohë kushdo
-      unlisted: Jo në listë
-      unlisted_long: Mund ta shohë gjithkush, por s’gjendet në rrjedha publike kohore
   statuses_cleanup:
     enabled: Fshi automatikisht postime të vjetra
     enabled_hint: Fshin automatikisht postimet tuaja, pasi mbërrijnë një prag të caktuar moshe, hiq rastin kur ka përputhje me një nga përjashtimet më poshtë
@@ -2058,7 +2055,6 @@ sq:
       post_action: Hartoni
       post_step: Përshëndetni botën me tekst, foto, video, ose pyetësorë.
       post_title: Shkruani postimin tuaj të parë
-      share_action: Ndajeni me të tjerë
       share_step: Bëjuni të ditur shokëve si t’ju gjejnë në Mastodon.
       share_title: Ndani me të tjerët profilin tuaj Mastodon
       sign_in_action: Hyni

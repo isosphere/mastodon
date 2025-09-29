@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import { defineMessages, useIntl } from 'react-intl';
 
@@ -24,6 +24,10 @@ import { openModal } from 'flavours/glitch/actions/modal';
 import { IconButton } from 'flavours/glitch/components/icon_button';
 import { useIdentity } from 'flavours/glitch/identity_context';
 import { me } from 'flavours/glitch/initial_state';
+import type { Account } from 'flavours/glitch/models/account';
+import type { Status } from 'flavours/glitch/models/status';
+import { makeGetStatus } from 'flavours/glitch/selectors';
+import type { RootState } from 'flavours/glitch/store';
 import { useAppSelector, useAppDispatch } from 'flavours/glitch/store';
 
 const messages = defineMessages({
@@ -32,7 +36,7 @@ const messages = defineMessages({
   reblog: { id: 'status.reblog', defaultMessage: 'Boost' },
   reblog_private: {
     id: 'status.reblog_private',
-    defaultMessage: 'Boost with original visibility',
+    defaultMessage: 'Share again with your followers',
   },
   cancel_reblog_private: {
     id: 'status.cancel_reblog_private',
@@ -50,6 +54,11 @@ const messages = defineMessages({
   open: { id: 'status.open', defaultMessage: 'Expand this status' },
 });
 
+type GetStatusSelector = (
+  state: RootState,
+  props: { id?: string | null; contextType?: string },
+) => Status | null;
+
 export const Footer: React.FC<{
   statusId: string;
   withOpenButton?: boolean;
@@ -59,11 +68,9 @@ export const Footer: React.FC<{
   const intl = useIntl();
   const history = useHistory();
   const dispatch = useAppDispatch();
-  const status = useAppSelector((state) => state.statuses.get(statusId));
-  const accountId = status?.get('account') as string | undefined;
-  const account = useAppSelector((state) =>
-    accountId ? state.accounts.get(accountId) : undefined,
-  );
+  const getStatus = useMemo(() => makeGetStatus(), []) as GetStatusSelector;
+  const status = useAppSelector((state) => getStatus(state, { id: statusId }));
+  const account = status?.get('account') as Account | undefined;
   const askReplyConfirmation = useAppSelector(
     (state) => (state.compose.get('text') as string).trim().length !== 0,
   );
@@ -92,7 +99,6 @@ export const Footer: React.FC<{
         openModal({
           modalType: 'INTERACTION',
           modalProps: {
-            type: 'reply',
             accountId: status.getIn(['account', 'id']),
             url: status.get('uri'),
           },
@@ -114,7 +120,6 @@ export const Footer: React.FC<{
           openModal({
             modalType: 'INTERACTION',
             modalProps: {
-              type: 'favourite',
               accountId: status.getIn(['account', 'id']),
               url: status.get('uri'),
             },
@@ -138,7 +143,6 @@ export const Footer: React.FC<{
           openModal({
             modalType: 'INTERACTION',
             modalProps: {
-              type: 'reblog',
               accountId: status.getIn(['account', 'id']),
               url: status.get('uri'),
             },
@@ -239,7 +243,10 @@ export const Footer: React.FC<{
         icon='retweet'
         iconComponent={reblogIconComponent}
         onClick={handleReblogClick}
-        counter={status.get('reblogs_count') as number}
+        counter={
+          (status.get('reblogs_count') as number) +
+          (status.get('quotes_count') as number)
+        }
       />
 
       <IconButton

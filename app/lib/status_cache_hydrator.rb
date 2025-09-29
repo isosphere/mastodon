@@ -71,29 +71,45 @@ class StatusCacheHydrator
     payload[:bookmarked] = Bookmark.exists?(account_id: account_id, status_id: status.id)
     payload[:pinned]     = StatusPin.exists?(account_id: account_id, status_id: status.id) if status.account_id == account_id
     payload[:filtered]   = mapped_applied_custom_filter(account_id, status)
+    # TODO: performance optimization by not loading `Account` twice
+    payload[:quote_approval][:current_user] = status.quote_policy_for_account(Account.find_by(id: account_id)) if payload[:quote_approval]
     payload[:quote] = hydrate_quote_payload(payload[:quote], status.quote, account_id, nested:) if payload[:quote]
+
+    # Nested statuses are more likely to have a stale cache
+    fill_status_stats(payload, status) if nested
+  end
+
+  def fill_status_stats(payload, status)
+    payload[:replies_count] = status.replies_count
+    payload[:reblogs_count] = status.untrusted_reblogs_count || status.reblogs_count
+    payload[:favourites_count] = status.untrusted_favourites_count || status.favourites_count
+    payload[:quotes_count] = status.quotes_count
   end
 
   def hydrate_quote_payload(empty_payload, quote, account_id, nested: false)
-    empty_payload.tap do |payload|
-      # Nothing to do if we're in the shallow (depth limit) case
-      next unless payload.key?(:quoted_status)
+    return unless quote&.acceptable?
 
+    empty_payload.tap do |payload|
       payload.delete(:quoted_status) if nested
 
       # TODO: performance improvements
-      if quote&.quoted_status.nil?
-        payload[nested ? :quoted_status_id : :quoted_status] = nil
-        payload[:state] = 'deleted'
-      elsif StatusFilter.new(quote.quoted_status, Account.find_by(id: account_id)).filtered?
-        payload[nested ? :quoted_status_id : :quoted_status] = nil
-        payload[:state] = 'unauthorized'
-      elsif payload[:state] == 'accepted'
-        if nested
-          payload[:quoted_status_id] = quote.quoted_status_id&.to_s
+      if quote.accepted?
+        if quote.quoted_status.nil?
+          payload[nested ? :quoted_status_id : :quoted_status] = nil
+          payload[:state] = 'deleted'
+        elsif StatusFilter.new(quote.quoted_status, Account.find_by(id: account_id)).filtered_for_quote?
+          payload[nested ? :quoted_status_id : :quoted_status] = nil
+          payload[:state] = 'unauthorized'
         else
-          payload[:quoted_status] = StatusCacheHydrator.new(quote.quoted_status).hydrate(account_id, nested: true)
+          payload[:state] = 'accepted'
+          if nested
+            payload[:quoted_status_id] = quote.quoted_status_id&.to_s
+          else
+            payload[:quoted_status] = StatusCacheHydrator.new(quote.quoted_status).hydrate(account_id, nested: true)
+          end
         end
+      else
+        payload[nested ? :quoted_status_id : :quoted_status] = nil
       end
     end
   end

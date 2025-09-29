@@ -1,13 +1,19 @@
 import { createRoot } from 'react-dom/client';
 
+import { Globals } from '@react-spring/web';
+
+import * as perf from '@/mastodon/utils/performance';
 import { setupBrowserNotifications } from 'mastodon/actions/notifications';
 import Mastodon from 'mastodon/containers/mastodon';
-import { me } from 'mastodon/initial_state';
-import * as perf from 'mastodon/performance';
+import { me, reduceMotion } from 'mastodon/initial_state';
 import ready from 'mastodon/ready';
 import { store } from 'mastodon/store';
 
-import { isProduction, isDevelopment } from './utils/environment';
+import {
+  isProduction,
+  isDevelopment,
+  isModernEmojiEnabled,
+} from './utils/environment';
 
 function main() {
   perf.start('main()');
@@ -20,6 +26,17 @@ function main() {
     const props = JSON.parse(
       mountNode.getAttribute('data-props') ?? '{}',
     ) as Record<string, unknown>;
+
+    if (reduceMotion) {
+      Globals.assign({
+        skipAnimation: true,
+      });
+    }
+
+    if (isModernEmojiEnabled()) {
+      const { initializeEmoji } = await import('@/mastodon/features/emoji');
+      initializeEmoji();
+    }
 
     const root = createRoot(mountNode);
     root.render(<Mastodon {...props} />);

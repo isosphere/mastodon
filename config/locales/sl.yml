@@ -1912,13 +1912,7 @@ sl:
       reblog: Izpostavitev ne more biti pripeta
     title: "%{name}: »%{quote}«"
     visibilities:
-      direct: Neposredno
-      private: Samo sledilci
-      private_long: Prikaži samo sledilcem
       public: Javno
-      public_long: Vsi lahko vidijo
-      unlisted: Ni prikazano
-      unlisted_long: Vsi lahko vidijo, vendar ni objavljeno na javnih časovnicah
   statuses_cleanup:
     enabled: Samodejno izbriši stare objave
     enabled_hint: Samodejno izbriše vaše objave, ko dosežejo določen starostni prag, razen če ne ustrezajo eni od spodnjih izjem
@@ -2104,7 +2098,6 @@ sl:
       post_action: Sestavi
       post_step: Pozdravite cel svet z besedilom, fotografijami, videoposnetki ali anketami.
       post_title: Ustvarite svojo prvo objavo
-      share_action: Delite
       share_step: Naj prijatelji izvejo, kako vas najdejo na Mastodonu.
       share_title: Delite svoj profil Mastodon z drugimi
       sign_in_action: Prijava

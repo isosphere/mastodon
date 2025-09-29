@@ -228,6 +228,10 @@ class MediaAttachment < ApplicationRecord
     file.blank? && remote_url.present?
   end
 
+  def discarded?
+    status&.discarded? || (status_id.present? && status.nil?)
+  end
+
   def significantly_changed?
     description_previously_changed? || thumbnail_updated_at_previously_changed? || file_meta_previously_changed?
   end
@@ -292,6 +296,10 @@ class MediaAttachment < ApplicationRecord
 
     def supported_file_extensions
       IMAGE_FILE_EXTENSIONS + VIDEO_FILE_EXTENSIONS + AUDIO_FILE_EXTENSIONS
+    end
+
+    def combined_media_file_size
+      arel_table.coalesce(arel_table[:file_file_size], 0) + arel_table.coalesce(arel_table[:thumbnail_file_size], 0)
     end
 
     private

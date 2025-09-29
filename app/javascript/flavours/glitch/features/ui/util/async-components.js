@@ -50,10 +50,6 @@ export function GettingStarted () {
   return import('../../getting_started');
 }
 
-export function GettingStartedMisc () {
-  return import('../../getting_started_misc');
-}
-
 export function KeyboardShortcuts () {
   return import('../../keyboard_shortcuts');
 }
@@ -88,6 +84,10 @@ export function Reblogs () {
 
 export function Favourites () {
   return import('../../favourites');
+}
+
+export function Quotes () {
+  return import('../../quotes');
 }
 
 export function FollowRequests () {

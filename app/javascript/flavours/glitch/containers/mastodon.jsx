@@ -5,7 +5,6 @@ import { Route } from 'react-router-dom';
 
 import { Provider as ReduxProvider } from 'react-redux';
 
-import { ScrollContext } from 'react-router-scroll-4';
 
 import { fetchCustomEmojis } from 'flavours/glitch/actions/custom_emojis';
 import { checkDeprecatedLocalSettings } from 'flavours/glitch/actions/local_settings';
@@ -19,6 +18,9 @@ import initialState, { title as siteTitle } from 'flavours/glitch/initial_state'
 import { IntlProvider } from 'flavours/glitch/locales';
 import { store } from 'flavours/glitch/store';
 import { isProduction } from 'flavours/glitch/utils/environment';
+import { BodyScrollLock } from 'flavours/glitch/features/ui/components/body_scroll_lock';
+
+import { ScrollContext } from './scroll_container/scroll_context';
 
 const title = isProduction() ? siteTitle : `${siteTitle} (Dev)`;
 
@@ -49,10 +51,6 @@ export default class Mastodon extends PureComponent {
     }
   }
 
-  shouldUpdateScroll (prevRouterProps, { location }) {
-    return !(location.state?.mastodonModalKey && location.state?.mastodonModalKey !== prevRouterProps?.location?.state?.mastodonModalKey);
-  }
-
   render () {
     return (
       <IdentityContext.Provider value={this.identity}>
@@ -60,9 +58,10 @@ export default class Mastodon extends PureComponent {
           <ReduxProvider store={store}>
             <ErrorBoundary>
               <Router>
-                <ScrollContext shouldUpdateScroll={this.shouldUpdateScroll}>
+                <ScrollContext>
                   <Route path='/' component={UI} />
                 </ScrollContext>
+                <BodyScrollLock />
               </Router>
 
               <Helmet defaultTitle={title} titleTemplate={`%s - ${title}`} />

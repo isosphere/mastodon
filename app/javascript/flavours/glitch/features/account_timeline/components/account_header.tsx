@@ -6,6 +6,8 @@ import classNames from 'classnames';
 import { Helmet } from 'react-helmet';
 import { NavLink } from 'react-router-dom';
 
+import { AccountBio } from '@/flavours/glitch/components/account_bio';
+import { DisplayName } from '@/flavours/glitch/components/display_name';
 import CheckIcon from '@/material-icons/400-24px/check.svg?react';
 import LockIcon from '@/material-icons/400-24px/lock.svg?react';
 import MoreHorizIcon from '@/material-icons/400-24px/more_horiz.svg?react';
@@ -42,8 +44,8 @@ import { FollowButton } from 'flavours/glitch/components/follow_button';
 import { FormattedDateWrapper } from 'flavours/glitch/components/formatted_date';
 import { Icon } from 'flavours/glitch/components/icon';
 import { IconButton } from 'flavours/glitch/components/icon_button';
+import { AccountNote } from 'flavours/glitch/features/account/components/account_note';
 import { DomainPill } from 'flavours/glitch/features/account/components/domain_pill';
-import AccountNoteContainer from 'flavours/glitch/features/account/containers/account_note_container';
 import FollowRequestNoteContainer from 'flavours/glitch/features/account/containers/follow_request_note_container';
 import { useLinks } from 'flavours/glitch/hooks/useLinks';
 import { useIdentity } from 'flavours/glitch/identity_context';
@@ -381,36 +383,6 @@ export const AccountHeader: React.FC<{
     });
   }, [account]);
 
-  const handleMouseEnter = useCallback(
-    ({ currentTarget }: React.MouseEvent) => {
-      if (autoPlayGif) {
-        return;
-      }
-
-      currentTarget
-        .querySelectorAll<HTMLImageElement>('.custom-emoji')
-        .forEach((emoji) => {
-          emoji.src = emoji.getAttribute('data-original') ?? '';
-        });
-    },
-    [],
-  );
-
-  const handleMouseLeave = useCallback(
-    ({ currentTarget }: React.MouseEvent) => {
-      if (autoPlayGif) {
-        return;
-      }
-
-      currentTarget
-        .querySelectorAll<HTMLImageElement>('.custom-emoji')
-        .forEach((emoji) => {
-          emoji.src = emoji.getAttribute('data-static') ?? '';
-        });
-    },
-    [],
-  );
-
   const suspended = account?.suspended;
   const isRemote = account?.acct !== account?.username;
   const remoteDomain = isRemote ? account?.acct.split('@')[1] : null;
@@ -422,7 +394,7 @@ export const AccountHeader: React.FC<{
       return arr;
     }
 
-    if (signedIn && account.id !== me && !account.suspended) {
+    if (signedIn && !account.suspended) {
       arr.push({
         text: intl.formatMessage(messages.mention, {
           name: account.username,
@@ -446,37 +418,7 @@ export const AccountHeader: React.FC<{
       arr.push(null);
     }
 
-    if (account.id === me) {
-      arr.push({
-        text: intl.formatMessage(messages.edit_profile),
-        href: '/settings/profile',
-      });
-      arr.push({
-        text: intl.formatMessage(messages.preferences),
-        href: '/settings/preferences',
-      });
-      arr.push(null);
-      arr.push({
-        text: intl.formatMessage(messages.follow_requests),
-        to: '/follow_requests',
-      });
-      arr.push({
-        text: intl.formatMessage(messages.favourites),
-        to: '/favourites',
-      });
-      arr.push({ text: intl.formatMessage(messages.lists), to: '/lists' });
-      arr.push({
-        text: intl.formatMessage(messages.followed_tags),
-        to: '/followed_tags',
-      });
-      arr.push(null);
-      arr.push({ text: intl.formatMessage(messages.mutes), to: '/mutes' });
-      arr.push({ text: intl.formatMessage(messages.blocks), to: '/blocks' });
-      arr.push({
-        text: intl.formatMessage(messages.domain_blocks),
-        to: '/domain_blocks',
-      });
-    } else if (signedIn) {
+    if (signedIn) {
       if (relationship?.following) {
         if (!relationship.muting) {
           if (relationship.showing_reblogs) {
@@ -615,8 +557,7 @@ export const AccountHeader: React.FC<{
     }
 
     if (
-      (account.id !== me &&
-        (permissions & PERMISSION_MANAGE_USERS) === PERMISSION_MANAGE_USERS) ||
+      (permissions & PERMISSION_MANAGE_USERS) === PERMISSION_MANAGE_USERS ||
       (isRemote &&
         (permissions & PERMISSION_MANAGE_FEDERATION) ===
           PERMISSION_MANAGE_FEDERATION)
@@ -803,13 +744,11 @@ export const AccountHeader: React.FC<{
       <Icon
         id='lock'
         icon={LockIcon}
-        title={intl.formatMessage(messages.account_locked)}
+        aria-label={intl.formatMessage(messages.account_locked)}
       />
     );
   }
 
-  const content = { __html: account.note_emojified };
-  const displayNameHtml = { __html: account.display_name_html };
   const fields = account.fields;
   const isLocal = !account.acct.includes('@');
   const username = account.acct.split('@')[0];
@@ -843,11 +782,9 @@ export const AccountHeader: React.FC<{
       )}
 
       <div
-        className={classNames('account__header', {
+        className={classNames('account__header animate-parent', {
           inactive: !!account.moved,
         })}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
       >
         {!(suspended || hidden || account.moved) &&
           relationship?.requested_by && (
@@ -884,19 +821,21 @@ export const AccountHeader: React.FC<{
             <div className='account__header__tabs__buttons'>
               {!hidden && bellBtn}
               {!hidden && shareBtn}
-              <Dropdown
-                disabled={menu.length === 0}
-                items={menu}
-                icon='ellipsis-v'
-                iconComponent={MoreHorizIcon}
-              />
+              {accountId !== me && (
+                <Dropdown
+                  disabled={menu.length === 0}
+                  items={menu}
+                  icon='ellipsis-v'
+                  iconComponent={MoreHorizIcon}
+                />
+              )}
               {!hidden && actionBtn}
             </div>
           </div>
 
           <div className='account__header__tabs__name'>
             <h1>
-              <span dangerouslySetInnerHTML={displayNameHtml} />
+              <DisplayName account={account} variant='simple' />
               <small>
                 <span>
                   @{username}
@@ -927,15 +866,13 @@ export const AccountHeader: React.FC<{
                 onClickCapture={handleLinkClick}
               >
                 {account.id !== me && signedIn && (
-                  <AccountNoteContainer accountId={accountId} />
+                  <AccountNote accountId={accountId} />
                 )}
 
-                {account.note.length > 0 && account.note !== '<p></p>' && (
-                  <div
-                    className='account__header__content translate'
-                    dangerouslySetInnerHTML={content}
-                  />
-                )}
+                <AccountBio
+                  accountId={accountId}
+                  className='account__header__content'
+                />
 
                 <div className='account__header__fields'>
                   <dl>

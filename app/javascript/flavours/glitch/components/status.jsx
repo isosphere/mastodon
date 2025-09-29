@@ -1,14 +1,14 @@
 import PropTypes from 'prop-types';
 
-import { injectIntl, FormattedMessage } from 'react-intl';
+import { injectIntl, defineMessages, FormattedMessage } from 'react-intl';
 
 import classNames from 'classnames';
 
 import ImmutablePropTypes from 'react-immutable-proptypes';
 import ImmutablePureComponent from 'react-immutable-pure-component';
 
-import { HotKeys } from 'react-hotkeys';
-
+import CancelFillIcon from '@/material-icons/400-24px/cancel-fill.svg?react';
+import { Hotkeys } from 'flavours/glitch/components/hotkeys';
 import { ContentWarning } from 'flavours/glitch/components/content_warning';
 import { PictureInPicturePlaceholder } from 'flavours/glitch/components/picture_in_picture_placeholder';
 import { autoUnfoldCW } from 'flavours/glitch/utils/content_warning';
@@ -25,18 +25,24 @@ import { displayMedia } from '../initial_state';
 import AttachmentList from './attachment_list';
 import { Avatar } from './avatar';
 import { AvatarOverlay } from './avatar_overlay';
-import { DisplayName } from './display_name';
+import { LinkedDisplayName } from './display_name';
 import { getHashtagBarForStatus } from './hashtag_bar';
 import { MentionsPlaceholder } from './mentions_placeholder';
-import { Permalink } from './permalink';
 import StatusActionBar from './status_action_bar';
 import StatusContent from './status_content';
 import StatusIcons from './status_icons';
 import StatusPrepend from './status_prepend';
+import { IconButton } from './icon_button';
 
 const domParser = new DOMParser();
 
-export const textForScreenReader = (intl, status, rebloggedByText = false, expanded = false) => {
+const messages = defineMessages({
+  quote_noun: { id: 'status.quote_noun', defaultMessage: 'Quote', description: 'Quote as a noun' },
+  contains_quote: { id: 'status.contains_quote', defaultMessage: 'Contains quote' },
+  quote_cancel: { id: 'status.quote.cancel', defaultMessage: 'Cancel quote' },
+});
+
+export const textForScreenReader = ({intl, status, rebloggedByText = false, isQuote = false, expanded = false}) => {
   const displayName = status.getIn(['account', 'display_name']);
 
   const spoilerText = status.getIn(['translation', 'spoiler_text']) || status.get('spoiler_text');
@@ -44,15 +50,14 @@ export const textForScreenReader = (intl, status, rebloggedByText = false, expan
   const contentText = domParser.parseFromString(contentHtml, 'text/html').documentElement.textContent;
 
   const values = [
+    isQuote ? intl.formatMessage(messages.quote_noun) : undefined,
     displayName.length === 0 ? status.getIn(['account', 'acct']).split('@')[0] : displayName,
     spoilerText && !expanded ? spoilerText : contentText,
+    !!status.get('quote') ? intl.formatMessage(messages.contains_quote) : undefined,
     intl.formatDate(status.get('created_at'), { hour: '2-digit', minute: '2-digit', month: 'short', day: 'numeric' }),
     status.getIn(['account', 'acct']),
-  ];
-
-  if (rebloggedByText) {
-    values.push(rebloggedByText);
-  }
+    rebloggedByText,
+  ].filter(val => !!val);
 
   return values.join(', ');
 };
@@ -90,6 +95,7 @@ class Status extends ImmutablePureComponent {
     onReply: PropTypes.func,
     onFavourite: PropTypes.func,
     onReblog: PropTypes.func,
+    onQuote: PropTypes.func,
     onBookmark: PropTypes.func,
     onDelete: PropTypes.func,
     onDirect: PropTypes.func,
@@ -105,14 +111,14 @@ class Status extends ImmutablePureComponent {
     onToggleCollapsed: PropTypes.func,
     onTranslate: PropTypes.func,
     onInteractionModal: PropTypes.func,
+    onQuoteCancel: PropTypes.func,
     muted: PropTypes.bool,
     hidden: PropTypes.bool,
     unread: PropTypes.bool,
     prepend: PropTypes.string,
     withDismiss: PropTypes.bool,
-    onMoveUp: PropTypes.func,
-    onMoveDown: PropTypes.func,
     isQuotedPost: PropTypes.bool,
+    shouldHighlightOnMount: PropTypes.bool, 
     getScrollPosition: PropTypes.func,
     updateScrollBottom: PropTypes.func,
     expanded: PropTypes.bool,
@@ -128,6 +134,7 @@ class Status extends ImmutablePureComponent {
       inUse: PropTypes.bool,
       available: PropTypes.bool,
     }),
+    contextType: PropTypes.string,
     ...WithOptionalRouterPropTypes,
   };
 
@@ -333,6 +340,10 @@ class Status extends ImmutablePureComponent {
     deployPictureInPicture(status, type, mediaProps);
   };
 
+  handleQuoteCancel = () => {
+    this.props.onQuoteCancel?.();
+  }
+
   handleHotkeyReply = e => {
     e.preventDefault();
     this.props.onReply(this.props.status);
@@ -348,6 +359,10 @@ class Status extends ImmutablePureComponent {
 
   handleHotkeyBookmark = e => {
     this.props.onBookmark(this.props.status, e);
+  };
+
+  handleHotkeyQuote = () => {
+    this.props.onQuote(this._properStatus());
   };
 
   handleHotkeyMention = e => {
@@ -377,7 +392,11 @@ class Status extends ImmutablePureComponent {
     if (newTab) {
       window.open(path, '_blank', 'noopener');
     } else {
-      history.push(path);
+      if (history.location.pathname.replace('/deck/', '/') === path) {
+        history.replace(path);
+      } else {
+        history.push(path);
+      }
     }
   };
 
@@ -394,14 +413,6 @@ class Status extends ImmutablePureComponent {
     }
 
     history.push(`/@${status.getIn(['account', 'acct'])}`);
-  };
-
-  handleHotkeyMoveUp = e => {
-    this.props.onMoveUp(this.props.containerId || this.props.id, e.target.getAttribute('data-featured'));
-  };
-
-  handleHotkeyMoveDown = e => {
-    this.props.onMoveDown(this.props.containerId || this.props.id, e.target.getAttribute('data-featured'));
   };
 
   handleHotkeyToggleSensitive = () => {
@@ -474,11 +485,10 @@ class Status extends ImmutablePureComponent {
       reply: this.handleHotkeyReply,
       favourite: this.handleHotkeyFavourite,
       boost: this.handleHotkeyBoost,
+      quote: this.handleHotkeyQuote,
       mention: this.handleHotkeyMention,
       open: this.handleHotkeyOpen,
       openProfile: this.handleHotkeyOpenProfile,
-      moveUp: this.handleHotkeyMoveUp,
-      moveDown: this.handleHotkeyMoveDown,
       toggleHidden: this.handleExpandedToggle,
       bookmark: this.handleHotkeyBookmark,
       toggleSensitive: this.handleHotkeyToggleSensitive,
@@ -495,13 +505,13 @@ class Status extends ImmutablePureComponent {
 
     if (hidden) {
       return (
-        <HotKeys handlers={handlers} tabIndex={unfocusable ? null : -1}>
+        <Hotkeys handlers={handlers} focusable={!unfocusable}>
           <div ref={this.handleRef} className='status focusable' tabIndex={unfocusable ? null : 0}>
             <span>{status.getIn(['account', 'display_name']) || status.getIn(['account', 'username'])}</span>
             {status.get('spoiler_text').length > 0 && (<span>{status.get('spoiler_text')}</span>)}
             {expanded && <span>{status.get('content')}</span>}
           </div>
-        </HotKeys>
+        </Hotkeys>
       );
     }
 
@@ -512,7 +522,7 @@ class Status extends ImmutablePureComponent {
       };
 
       return (
-        <HotKeys handlers={minHandlers} tabIndex={unfocusable ? null : -1}>
+        <Hotkeys handlers={minHandlers} focusable={!unfocusable}>
           <div className='status__wrapper status__wrapper--filtered focusable' tabIndex={unfocusable ? null : 0} ref={this.handleRef}>
             <FormattedMessage id='status.filtered' defaultMessage='Filtered' />: {matchedFilters.join(', ')}.
             {' '}
@@ -520,7 +530,7 @@ class Status extends ImmutablePureComponent {
               <FormattedMessage id='status.show_filter_reason' defaultMessage='Show anyway' />
             </button>
           </div>
-        </HotKeys>
+        </Hotkeys>
       );
     }
 
@@ -674,13 +684,13 @@ class Status extends ImmutablePureComponent {
     const {statusContentProps, hashtagBar} = getHashtagBarForStatus(status);
 
     return (
-      <HotKeys handlers={handlers} tabIndex={unfocusable ? null : -1}>
+      <Hotkeys handlers={handlers} focusable={!unfocusable}>
         <div
           className={classNames('status__wrapper', 'focusable', `status__wrapper-${status.get('visibility')}`, { 'status__wrapper-reply': !!status.get('in_reply_to_id'), unread })}
           {...selectorAttribs}
           tabIndex={unfocusable ? null : 0}
           data-featured={featured ? 'true' : null}
-          aria-label={textForScreenReader(intl, status, rebloggedByText, !status.get('hidden'))}
+          aria-label={textForScreenReader({intl, status, rebloggedByText, isQuote: isQuotedPost, expanded: !status.get('hidden')})}
           ref={this.handleRef}
           data-nosnippet={status.getIn(['account', 'noindex'], true) || undefined}
         >
@@ -696,6 +706,7 @@ class Status extends ImmutablePureComponent {
                 muted: this.props.muted,
                 'status--is-quote': isQuotedPost,
                 'status--has-quote': !!status.get('quote'),
+                'status--highlighted-entry': this.props.shouldHighlightOnMount,
               })
             }
             data-id={status.get('id')}
@@ -704,18 +715,27 @@ class Status extends ImmutablePureComponent {
 
             {(!muted) && (
               <header onClick={this.handleHeaderClick} onAuxClick={this.handleHeaderClick} className='status__info'>
-                <Permalink href={status.getIn(['account', 'url'])} to={`/@${status.getIn(['account', 'acct'])}`} title={status.getIn(['account', 'acct'])} data-hover-card-account={status.getIn(['account', 'id'])} className='status__display-name'>
+                <LinkedDisplayName displayProps={{account: status.get('account')}} className='status__display-name'>
                   <div className='status__avatar'>
                     {statusAvatar}
                   </div>
+                </LinkedDisplayName>
 
-                  <DisplayName account={status.get('account')} />
-                </Permalink>
-                <StatusIcons
-                  status={status}
-                  mediaIcons={mediaIcons}
-                  settings={settings.get('status_icons')}
-                />
+                {isQuotedPost && !!this.props.onQuoteCancel ? (
+                  <IconButton
+                    onClick={this.handleQuoteCancel}
+                    className='status__quote-cancel'
+                    title={intl.formatMessage(messages.quote_cancel)}
+                    icon="cancel-fill"
+                    iconComponent={CancelFillIcon}
+                  />
+                ) : (
+                  <StatusIcons
+                    status={status}
+                    mediaIcons={mediaIcons}
+                    settings={settings.get('status_icons')}
+                  />
+                )}
               </header>
             )}
 
@@ -735,10 +755,10 @@ class Status extends ImmutablePureComponent {
                   {...statusContentProps}
                 />
 
-                {children}
-
                 {media}
                 {hashtagBar}
+
+                {children}
               </>
             )}
 
@@ -756,7 +776,7 @@ class Status extends ImmutablePureComponent {
             }
           </div>
         </div>
-      </HotKeys>
+      </Hotkeys>
     );
   }
 
