@@ -3,12 +3,13 @@ import { useCallback, useEffect } from 'react';
 import { useIntl, defineMessages } from 'react-intl';
 
 import classNames from 'classnames';
+import { Link } from 'react-router-dom';
 
 import { useIdentity } from '@/mastodon/identity_context';
+import { isServerFeatureEnabled } from '@/mastodon/utils/environment';
 import {
   fetchRelationships,
   followAccount,
-  unblockAccount,
   unmuteAccount,
 } from 'mastodon/actions/accounts';
 import { openModal } from 'mastodon/actions/modal';
@@ -59,7 +60,15 @@ export const FollowButton: React.FC<{
   accountId?: string;
   compact?: boolean;
   labelLength?: 'auto' | 'short' | 'long';
-}> = ({ accountId, compact, labelLength = 'auto' }) => {
+  className?: string;
+  withUnmute?: boolean;
+}> = ({
+  accountId,
+  compact,
+  labelLength = 'auto',
+  className,
+  withUnmute = true,
+}) => {
   const intl = useIntl();
   const dispatch = useAppDispatch();
   const { signedIn } = useIdentity();
@@ -83,6 +92,7 @@ export const FollowButton: React.FC<{
         openModal({
           modalType: 'INTERACTION',
           modalProps: {
+            intent: 'follow',
             accountId: accountId,
             url: account?.url,
           },
@@ -94,18 +104,30 @@ export const FollowButton: React.FC<{
 
     if (accountId === me) {
       return;
-    } else if (relationship.muting) {
+    } else if (relationship.blocking) {
+      dispatch(
+        openModal({
+          modalType: 'CONFIRM_UNBLOCK',
+          modalProps: { account },
+        }),
+      );
+    } else if (relationship.muting && withUnmute) {
       dispatch(unmuteAccount(accountId));
-    } else if (account && (relationship.following || relationship.requested)) {
+    } else if (account && relationship.following) {
       dispatch(
         openModal({ modalType: 'CONFIRM_UNFOLLOW', modalProps: { account } }),
       );
-    } else if (relationship.blocking) {
-      dispatch(unblockAccount(accountId));
+    } else if (account && relationship.requested) {
+      dispatch(
+        openModal({
+          modalType: 'CONFIRM_WITHDRAW_REQUEST',
+          modalProps: { account },
+        }),
+      );
     } else {
       dispatch(followAccount(accountId));
     }
-  }, [dispatch, accountId, relationship, account, signedIn]);
+  }, [signedIn, relationship, accountId, withUnmute, account, dispatch]);
 
   const isNarrow = useBreakpoint('narrow');
   const useShortLabel =
@@ -117,6 +139,8 @@ export const FollowButton: React.FC<{
     : messages.follow;
 
   let label;
+  let disabled =
+    relationship?.blocked_by || account?.suspended || !!account?.moved;
 
   if (!signedIn) {
     label = intl.formatMessage(followMessage);
@@ -124,14 +148,18 @@ export const FollowButton: React.FC<{
     label = intl.formatMessage(messages.editProfile);
   } else if (!relationship) {
     label = <LoadingIndicator />;
-  } else if (relationship.muting) {
+  } else if (relationship.muting && withUnmute) {
     label = intl.formatMessage(messages.unmute);
+    disabled = false;
   } else if (relationship.following) {
     label = intl.formatMessage(messages.unfollow);
+    disabled = false;
   } else if (relationship.blocking) {
     label = intl.formatMessage(messages.unblock);
+    disabled = false;
   } else if (relationship.requested) {
     label = intl.formatMessage(messages.followRequestCancel);
+    disabled = false;
   } else if (relationship.followed_by && !account?.locked) {
     label = intl.formatMessage(messages.followBack);
   } else {
@@ -139,14 +167,24 @@ export const FollowButton: React.FC<{
   }
 
   if (accountId === me) {
+    const buttonClasses = classNames(className, 'button button-secondary', {
+      'button--compact': compact,
+    });
+
+    if (isServerFeatureEnabled('profile_redesign')) {
+      return (
+        <Link to='/profile/edit' className={buttonClasses}>
+          {label}
+        </Link>
+      );
+    }
+
     return (
       <a
         href='/settings/profile'
         target='_blank'
         rel='noopener'
-        className={classNames('button button-secondary', {
-          'button--compact': compact,
-        })}
+        className={buttonClasses}
       >
         {label}
       </a>
@@ -156,15 +194,10 @@ export const FollowButton: React.FC<{
   return (
     <Button
       onClick={handleClick}
-      disabled={
-        relationship?.blocked_by ||
-        relationship?.blocking ||
-        (!(relationship?.following || relationship?.requested) &&
-          (account?.suspended || !!account?.moved))
-      }
-      secondary={following}
+      disabled={disabled}
+      secondary={following || relationship?.blocking}
       compact={compact}
-      className={following ? 'button--destructive' : undefined}
+      className={classNames(className, { 'button--destructive': following })}
     >
       {label}
     </Button>

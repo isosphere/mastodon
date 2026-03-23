@@ -8,14 +8,13 @@ import type {
   ApiAccountRoleJSON,
   ApiAccountJSON,
 } from 'flavours/glitch/api_types/accounts';
-import emojify from 'flavours/glitch/features/emoji/emoji';
 import { unescapeHTML } from 'flavours/glitch/utils/html';
 
-import { CustomEmojiFactory, makeEmojiMap } from './custom_emoji';
-import type { CustomEmoji, EmojiMap } from './custom_emoji';
+import { CustomEmojiFactory } from './custom_emoji';
+import type { CustomEmoji } from './custom_emoji';
 
 // AccountField
-interface AccountFieldShape extends Required<ApiAccountFieldJSON> {
+export interface AccountFieldShape extends Required<ApiAccountFieldJSON> {
   name_emojified: string;
   value_emojified: string;
   value_plain: string | null;
@@ -43,10 +42,9 @@ const AccountRoleFactory = ImmutableRecord<AccountRoleShape>({
 });
 
 // Account
-export interface AccountShape
-  extends Required<
-    Omit<ApiAccountJSON, 'emojis' | 'fields' | 'roles' | 'moved' | 'url'>
-  > {
+export interface AccountShape extends Required<
+  Omit<ApiAccountJSON, 'emojis' | 'fields' | 'roles' | 'moved' | 'url'>
+> {
   emojis: ImmutableList<CustomEmoji>;
   fields: ImmutableList<AccountField>;
   roles: ImmutableList<AccountRole>;
@@ -71,6 +69,11 @@ export const accountDefaultValues: AccountShape = {
   display_name: '',
   display_name_html: '',
   emojis: ImmutableList<CustomEmoji>(),
+  feature_approval: {
+    automatic: [],
+    manual: [],
+    current_user: 'missing',
+  },
   fields: ImmutableList<AccountField>(),
   group: false,
   header: '',
@@ -79,6 +82,9 @@ export const accountDefaultValues: AccountShape = {
   last_status_at: '',
   locked: false,
   noindex: false,
+  show_featured: true,
+  show_media: true,
+  show_media_replies: true,
   note: '',
   note_emojified: '',
   note_plain: 'string',
@@ -102,25 +108,17 @@ export const accountDefaultValues: AccountShape = {
 
 const AccountFactory = ImmutableRecord<AccountShape>(accountDefaultValues);
 
-function createAccountField(
-  jsonField: ApiAccountFieldJSON,
-  emojiMap: EmojiMap,
-) {
+function createAccountField(jsonField: ApiAccountFieldJSON) {
   return AccountFieldFactory({
     ...jsonField,
-    name_emojified: emojify(
-      escapeTextContentForBrowser(jsonField.name),
-      emojiMap,
-    ),
-    value_emojified: emojify(jsonField.value, emojiMap),
+    name_emojified: escapeTextContentForBrowser(jsonField.name),
+    value_emojified: jsonField.value,
     value_plain: unescapeHTML(jsonField.value),
   });
 }
 
 export function createAccountFromServerJSON(serverJSON: ApiAccountJSON) {
   const { moved, ...accountJSON } = serverJSON;
-
-  const emojiMap = makeEmojiMap(accountJSON.emojis);
 
   const displayName =
     accountJSON.display_name.trim().length === 0
@@ -134,7 +132,7 @@ export function createAccountFromServerJSON(serverJSON: ApiAccountJSON) {
     ...accountJSON,
     moved: moved?.id,
     fields: ImmutableList(
-      serverJSON.fields.map((field) => createAccountField(field, emojiMap)),
+      serverJSON.fields.map((field) => createAccountField(field)),
     ),
     emojis: ImmutableList(
       serverJSON.emojis.map((emoji) => CustomEmojiFactory(emoji)),
@@ -142,11 +140,8 @@ export function createAccountFromServerJSON(serverJSON: ApiAccountJSON) {
     roles: ImmutableList(
       serverJSON.roles?.map((role) => AccountRoleFactory(role)),
     ),
-    display_name_html: emojify(
-      escapeTextContentForBrowser(displayName),
-      emojiMap,
-    ),
-    note_emojified: emojify(accountNote, emojiMap),
+    display_name_html: escapeTextContentForBrowser(displayName),
+    note_emojified: accountNote,
     note_plain: unescapeHTML(accountNote),
     url:
       accountJSON.url?.startsWith('http://') ||
