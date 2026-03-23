@@ -5,7 +5,7 @@
   "account.suspended_disclaimer_full": "This user has been suspended by a moderator.",
   "account.view_full_profile": "View full profile",
   "boost_modal.missing_description": "This toot contains some media without description",
-  "column.favourited_by": "Favourited by",
+  "column.favourited_by": "Booped by",
   "column.reblogged_by": "Boosted by",
   "column_header.profile": "Profile",
   "community.column_settings.allow_local_only": "Show local-only toots",
