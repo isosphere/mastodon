@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEventHandler, FC } from 'react';
 
-import { defineMessage, FormattedMessage, useIntl } from 'react-intl';
+import { defineMessages, FormattedMessage, useIntl } from 'react-intl';
 
 import type { Area } from 'react-easy-crop';
 import Cropper from 'react-easy-crop';
 
 import { setDragUploadEnabled } from '@/flavours/glitch/actions/compose_typed';
 import { Button } from '@/flavours/glitch/components/button';
-import { RangeInput } from '@/flavours/glitch/components/form_fields/range_input_field';
+import { RangeInputField } from '@/flavours/glitch/components/form_fields/range_input_field';
 import {
   selectImageInfo,
   uploadImage,
@@ -24,29 +24,61 @@ import classes from './styles.module.scss';
 
 import 'react-easy-crop/react-easy-crop.css';
 
+const messages = defineMessages({
+  avatarAdd: {
+    id: 'account_edit.upload_modal.title_add.avatar',
+    defaultMessage: 'Add profile photo',
+  },
+  headerAdd: {
+    id: 'account_edit.upload_modal.title_add.header',
+    defaultMessage: 'Add cover photo',
+  },
+  avatarReplace: {
+    id: 'account_edit.upload_modal.title_replace.avatar',
+    defaultMessage: 'Replace profile photo',
+  },
+  headerReplace: {
+    id: 'account_edit.upload_modal.title_replace.header',
+    defaultMessage: 'Replace cover photo',
+  },
+  zoomLabel: {
+    id: 'account_edit.upload_modal.step_crop.zoom',
+    defaultMessage: 'Zoom',
+  },
+});
+
 export const ImageUploadModal: FC<
   DialogModalProps & { location: ImageLocation }
 > = ({ onClose, location }) => {
   const { src: oldSrc } = useAppSelector((state) =>
     selectImageInfo(state, location),
   );
-  const hasImage = !!oldSrc;
-  const [step, setStep] = useState<'select' | 'crop' | 'alt'>('select');
+  const intl = useIntl();
+  const title = intl.formatMessage(
+    oldSrc ? messages[`${location}Replace`] : messages[`${location}Add`],
+  );
 
   // State for individual steps.
+  const [step, setStep] = useState<'select' | 'crop' | 'alt'>('select');
   const [imageSrc, setImageSrc] = useState<string | null>(null);
   const [imageBlob, setImageBlob] = useState<Blob | null>(null);
 
   const handleFile = useCallback((file: File) => {
-    const reader = new FileReader();
-    reader.addEventListener('load', () => {
-      const result = reader.result;
-      if (typeof result === 'string' && result.length > 0) {
-        setImageSrc(result);
-        setStep('crop');
-      }
-    });
-    reader.readAsDataURL(file);
+    try {
+      parseImageFile(file, (result, isAnimated) => {
+        if (isAnimated) {
+          // If the image is animated, skip cropping and go straight to alt text.
+          setImageBlob(file);
+          setStep('alt');
+        } else {
+          setImageSrc(result);
+          setStep('crop');
+        }
+      });
+    } catch (error) {
+      console.warn('Error with image parsing:', error);
+      setStep('select');
+    }
   }, []);
 
   const handleCrop = useCallback(
@@ -78,35 +110,24 @@ export const ImageUploadModal: FC<
   );
 
   const handleCancel = useCallback(() => {
-    switch (step) {
-      case 'crop':
-        setImageSrc(null);
-        setStep('select');
-        break;
-      case 'alt':
-        setImageBlob(null);
+    if (step === 'crop') {
+      setImageSrc(null);
+      setStep('select');
+    } else if (step === 'alt') {
+      setImageBlob(null);
+      if (imageSrc) {
         setStep('crop');
-        break;
-      default:
-        onClose();
+      } else {
+        setStep('select');
+      }
+    } else {
+      onClose();
     }
-  }, [onClose, step]);
+  }, [imageSrc, onClose, step]);
 
   return (
     <DialogModal
-      title={
-        hasImage ? (
-          <FormattedMessage
-            id='account_edit.upload_modal.title_replace'
-            defaultMessage='Replace profile photo'
-          />
-        ) : (
-          <FormattedMessage
-            id='account_edit.upload_modal.title_add'
-            defaultMessage='Add profile photo'
-          />
-        )
-      }
+      title={title}
       onClose={onClose}
       wrapperClassName={classes.uploadWrapper}
       noCancelButton
@@ -124,6 +145,7 @@ export const ImageUploadModal: FC<
       )}
       {step === 'alt' && imageBlob && (
         <StepAlt
+          location={location}
           imageBlob={imageBlob}
           onCancel={handleCancel}
           onComplete={handleSave}
@@ -275,11 +297,6 @@ const StepUpload: FC<{
   );
 };
 
-const zoomLabel = defineMessage({
-  id: 'account_edit.upload_modal.step_crop.zoom',
-  defaultMessage: 'Zoom',
-});
-
 const StepCrop: FC<{
   src: string;
   location: ImageLocation;
@@ -322,14 +339,15 @@ const StepCrop: FC<{
       </div>
 
       <div className={classes.cropActions}>
-        <RangeInput
+        <RangeInputField
+          label={intl.formatMessage(messages.zoomLabel)}
           min={1}
           max={3}
           step={0.1}
           value={zoom}
           onChange={handleZoomChange}
-          className={classes.zoomControl}
-          aria-label={intl.formatMessage(zoomLabel)}
+          wrapperClassName={classes.zoomControl}
+          inputPlacement='inline-end'
         />
         <Button onClick={onCancel} secondary>
           <FormattedMessage
@@ -352,7 +370,8 @@ const StepAlt: FC<{
   imageBlob: Blob;
   onCancel: () => void;
   onComplete: (altText: string) => void;
-}> = ({ imageBlob, onCancel, onComplete }) => {
+  location: ImageLocation;
+}> = ({ imageBlob, onCancel, onComplete, location }) => {
   const [altText, setAltText] = useState('');
 
   const handleComplete = useCallback(() => {
@@ -367,6 +386,7 @@ const StepAlt: FC<{
         imageSrc={imageSrc}
         altText={altText}
         onChange={setAltText}
+        hideTip={location === 'header'}
       />
 
       <div className={classes.cropActions}>
@@ -387,6 +407,54 @@ const StepAlt: FC<{
     </>
   );
 };
+
+/**
+ * Parses an image file and determines if it's an animated GIF and returns a data URI for cropping.
+ * Based on https://gist.github.com/zakirt/faa4a58cec5a7505b10e3686a226f285.
+ */
+function parseImageFile(
+  file: File,
+  cb: (buffer: string, isAnimated: boolean) => void,
+): void {
+  const reader = new FileReader();
+  reader.onload = () => {
+    const buffer = reader.result;
+    if (!(buffer instanceof ArrayBuffer)) {
+      throw new Error('Expected an ArrayBuffer');
+    }
+
+    // Convert the ArrayBuffer to a base64 data URI.
+    const bytes = new Uint8Array(buffer);
+    const base64 = btoa(String.fromCharCode(...bytes));
+    const dataUri = `data:${file.type};base64,${base64}`;
+
+    // If the file type is not a GIF, then it's not animated as we don't support animated WebP or PNG.
+    if (file.type !== 'image/gif') {
+      cb(dataUri, false);
+    }
+
+    const view = new DataView(buffer, 10); // Start from the last 4 bytes of the Logical Screen Descriptor.
+    let offset = 3;
+
+    // Check the first bit for the global color table flag.
+    const globalColorTable = view.getInt8(0);
+    if (globalColorTable & 0x08) {
+      // Grab last three bits to calculate the global color table size, and skip it.
+      offset += 3 * Math.pow(2, (globalColorTable & 0x7) + 1);
+    }
+
+    // Check Graphics Control Extension and Graphics Control Label to access animated data.
+    let delayTime = 0;
+    if (view.getUint8(offset) & 0x21 && view.getUint8(offset + 1) & 0xf9) {
+      // Skip to the delay time, which is stored in the next two bytes.
+      delayTime = view.getUint16(offset + 4);
+    }
+
+    // If there is a delay time, the GIF is animated.
+    cb(dataUri, delayTime > 0);
+  };
+  reader.readAsArrayBuffer(file);
+}
 
 async function calculateCroppedImage(
   imageSrc: string,
@@ -414,10 +482,7 @@ async function calculateCroppedImage(
     crop.height,
   );
 
-  return canvas.convertToBlob({
-    quality: 0.7,
-    type: 'image/jpeg',
-  });
+  return canvas.convertToBlob();
 }
 
 function dataUriToImage(dataUri: string) {
