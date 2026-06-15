@@ -31,6 +31,9 @@ import { getHashtagBarForStatus } from './hashtag_bar';
 import StatusActionBar from './status_action_bar';
 import StatusContent from './status_content';
 import { StatusThreadLabel } from './status_thread_label';
+import { CollectionPreviewCard } from '../features/collections/components/collection_preview_card';
+import { compareUrls } from '../utils/compare_urls';
+import { FOCUS_TARGET } from './navigation_focus_target';
 
 const domParser = new DOMParser();
 
@@ -309,9 +312,9 @@ class Status extends ImmutablePureComponent {
       window.open(path, '_blank', 'noopener');
     } else {
       if (history.location.pathname.replace('/deck/', '/') === path) {
-        history.replace(path);
+        history.replace(path, {focusTarget: FOCUS_TARGET.POST});
       } else {
-        history.push(path);
+        history.push(path, {focusTarget: FOCUS_TARGET.POST});
       }
     }
   };
@@ -547,13 +550,30 @@ class Status extends ImmutablePureComponent {
         );
       }
     } else if (status.get('card') && !status.get('quote')) {
-      media = (
-        <Card
-          key={`${status.get('id')}-${status.get('edited_at')}`}
-          card={status.get('card')}
-          sensitive={status.get('sensitive')}
-        />
-      );
+      const cardUrl = status.getIn(['card', 'url']);
+
+      const taggedCollection = (
+        status.get('tagged_collections')
+      ).find((item) => compareUrls(item.get('url'), cardUrl));
+  
+      if (taggedCollection) {
+        media = <CollectionPreviewCard collection={taggedCollection.toJS()} headingLevel='h2' />;
+      } else {
+        media = (
+          <Card
+            key={`${status.get('id')}-${status.get('edited_at')}`}
+            card={status.get('card')}
+            sensitive={status.get('sensitive')}
+          />
+        );
+      }
+    } else if (status.get('tagged_collections').size && !status.get('quote')) {
+      const firstLinkedCollection = status.get('tagged_collections').first();
+      if (firstLinkedCollection) {
+        media = (
+          <CollectionPreviewCard collection={firstLinkedCollection.toJS()} headingLevel='h2' />
+        );
+      }
     }
 
     const {statusContentProps, hashtagBar} = getHashtagBarForStatus(status);

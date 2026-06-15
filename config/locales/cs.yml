@@ -505,6 +505,21 @@ cs:
       resolved_dns_records_hint_html: Doménové jméno vede na následující MX domény, které mají nakonec na starost přijímání e-mailů. Blokování MX domény zablokuje registrace z jakékoliv e-mailové adresy, která používá stejnou MX doménu, i když je viditelné doménové jméno jiné. <strong>Dejte si pozor, abyste nezablokovali velké e-mailové poskytovatele.</strong>
       resolved_through_html: Přeložena přes %{domain}
       title: Blokované e-mailové domény
+    email_subscriptions:
+      accounts:
+        account: Účet
+        last_email: Poslední e-mail
+        status: Status
+      compliance_settings:
+        additional_footer_text:
+          action: Spravovat
+        privacy_policy:
+          action: Spravovat
+      roles:
+        edit_role: Upravit roli
+        manage_roles: Spravovat role
+        role_name: Název role
+        title: Role
     export_domain_allows:
       new:
         title: Importovat povolené domény
@@ -697,7 +712,6 @@ cs:
       action_log: Protokol auditu
       action_taken_by: Akci vykonal uživatel
       actions:
-        delete_description_html: Nahlášené příspěvky budou smazány a prohřešek zaznamenán pro pomoc s eskalací v případě budoucích porušení stejným účtem.
         mark_as_sensitive_description_html: Média v nahlášených příspěvcích budou označena jako citlivá a bude zaznamenán prohřešek pro pomoc s eskalací v případě budoucích porušení stejným účtem.
         other_description_html: Podívejte se na další možnosti kontroly chování účtu a přizpůsobte komunikaci k nahlášenému účtu.
         resolve_description_html: Nebudou učiněny žádné kroky proti nahlášenému účtu, žádný prohřešek zaznamenán a hlášení bude uzavřeno.
@@ -717,13 +731,13 @@ cs:
       cancel: Zrušit
       category: Kategorie
       category_description_html: Důvod nahlášení tohoto účtu a/nebo obsahu bude uveden v komunikaci s nahlášeným účtem
+      collections: Sbírky (%{count})
       comment:
         none: Žádné
       comment_description_html: 'Pro upřesnění uživatel %{name} napsal:'
       confirm: Potvrdit
       confirm_action: Potvrdit moderátorskou akci vůči @%{acct}
       created_at: Nahlášené
-      delete_and_resolve: Smazat příspěvky
       forwarded: Přeposláno
       forwarded_replies_explanation: Toto hlášení je od uživatele z jiného serveru, a je o obsahu z jeho serveru. Byl převeden na vás, protože nahlášený obsah odpovídá jednomu z vašich uživatelů.
       forwarded_to: Přeposláno na %{domain}
@@ -788,6 +802,7 @@ cs:
       categories:
         administration: Administrace
         devops: DevOps
+        email: E-mail
         invites: Pozvánky
         moderation: Moderování
         special: Speciální
@@ -903,11 +918,6 @@ cs:
           authenticated: Pouze autentifikovaní uživatelé
           disabled: Vyžadovat specifickou uživatelskou roli
           public: Všichni
-      landing_page:
-        values:
-          about: O službě
-          local_feed: Místní kanál
-          trends: Trendy
       registrations:
         moderation_recommandation: Před otevřením registrací všem se ujistěte, že máte vhodný a reaktivní moderační tým!
         preamble: Mějte pod kontrolou, kdo může vytvořit účet na vašem serveru.

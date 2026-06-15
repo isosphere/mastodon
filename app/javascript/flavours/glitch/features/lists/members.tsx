@@ -2,8 +2,9 @@ import { useCallback, useState, useEffect } from 'react';
 
 import { defineMessages, useIntl, FormattedMessage } from 'react-intl';
 
-import { Helmet } from 'react-helmet';
 import { useParams, Link } from 'react-router-dom';
+
+import { Helmet } from '@unhead/react/helmet';
 
 import ListAltIcon from '@/material-icons/400-24px/list_alt.svg?react';
 import SquigglyArrow from '@/svg-icons/squiggly_arrow.svg?react';
@@ -14,7 +15,7 @@ import { fetchList } from 'flavours/glitch/actions/lists';
 import { openModal } from 'flavours/glitch/actions/modal';
 import { apiFollowAccount } from 'flavours/glitch/api/accounts';
 import {
-  apiGetAccounts,
+  apiGetListAccounts,
   apiAddAccountToList,
   apiRemoveAccountFromList,
 } from 'flavours/glitch/api/lists';
@@ -183,7 +184,7 @@ const ListMembers: React.FC<{
     if (id) {
       dispatch(fetchList(id));
 
-      void apiGetAccounts(id)
+      void apiGetListAccounts(id)
         .then((data) => {
           dispatch(importFetchedAccounts(data));
           setAccountIds(data.map((a) => a.id));
